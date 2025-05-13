@@ -1,0 +1,12 @@
+pyvips
+matplotlib
+numpy
+pandas
+fastapi
+uvicorn
+boto3
+pydicom
+pylibjpeg
+pylibjpeg-libjpeg
+pylibjpeg-openjpeg
+opencv-python-headless

@@ -1,0 +1,7 @@
+build/
+.idea/
+*.pyc
+.vscode/
+**/.vs/*
+**/obj/*
+*.DS_Store

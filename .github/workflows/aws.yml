@@ -1,0 +1,159 @@
+name: Deploy to EC2 using AWS CLI
+
+on:
+  push:
+    branches:
+      - development
+      - main
+
+jobs:
+  deploy-prod:
+    name: Deploy to EC2 (Prod)
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Configure AWS CLI
+      - name: Configure AWS CLI
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AMAZON_S3_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AMAZON_S3_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AMAZON_S3_REGION_NAME }}
+
+      # Step 3: Build Docker Image
+      - name: Build Docker Image
+        run: |
+          docker build -t diagnostic-anonymizer:latest .
+
+      - name: Tag Docker Image
+        run: |
+          docker tag diagnostic-anonymizer:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AMAZON_S3_REGION_NAME }}.amazonaws.com/diagnostic-anonymizer:latest
+
+      - name: Push Docker Image to ECR
+        run: |
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AMAZON_S3_ACCESS_KEY_ID }}.amazonaws.com/diagnostic-anonymizer:latest
+
+      # Step 6: Trigger Deployment in Second Repository
+      - name: Trigger Deployment in Second Repository
+        run: |
+          echo "${{ github.ref }}"
+          curl -X POST -H "Authorization: token ${{ secrets.DISPATCH_ACCESS_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/Daudkhan1/diagnostic-deployment/dispatches \
+            -d '{"event_type": "web-trigger", "client_payload": { "branch": "${{ github.ref }}" }}'
+
+      # Step 7: Wait for Deployment in Second Repository
+      - name: Wait for Deployment in Second Repository
+        run: |
+          echo "Waiting for deployment to complete..."
+          REPO="Daudkhan1/diagnostic-deployment"
+          MAX_ATTEMPTS=30
+          INTERVAL=10
+          ATTEMPT=0
+
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            echo "Checking workflow status... Attempt $((ATTEMPT+1))/$MAX_ATTEMPTS"
+            STATUS=$(curl -s -H "Authorization: token ${{ secrets.DISPATCH_ACCESS_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/repos/$REPO/actions/runs?per_page=1" | \
+              jq -r '.workflow_runs[0].conclusion')
+            echo "Status is $STATUS ."
+            if [[ "$STATUS" == "success" ]]; then
+              echo "Deployment succeeded in second repository!"
+              exit 0
+            elif [[ "$STATUS" == "failure" || "$STATUS" == "cancelled" ]]; then
+              echo "Deployment failed in second repository!"
+              exit 1
+            fi
+
+            echo "Still running... waiting $INTERVAL seconds before retrying."
+            sleep $INTERVAL
+            ATTEMPT=$((ATTEMPT+1))
+          done
+
+          echo "Timeout reached! Deployment status unknown."
+          exit 1
+
+
+  deploy-development:
+    name: Deploy to EC2 (Development)
+    if: github.ref == 'refs/heads/development'
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Configure AWS CLI
+      - name: Configure AWS CLI
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AMAZON_S3_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AMAZON_S3_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AMAZON_S3_REGION_NAME}}
+
+      - name: Login to Amazon ECR
+        run: |
+          aws ecr get-login-password --region ${{ secrets.AMAZON_S3_REGION_NAME }} | \
+          docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AMAZON_S3_REGION_NAME }}.amazonaws.com
+
+      # Step 3: Build Docker Image
+      - name: Build Docker Image
+        run: |
+          docker build -t diagnostic-anonymizer:dev .
+
+      - name: Tag Docker Image
+        run: |
+          docker tag diagnostic-anonymizer:dev ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AMAZON_S3_REGION_NAME }}.amazonaws.com/diagnostic-anonymizer:dev
+
+      # Step 5: Upload Docker Image to S3
+      - name: Push Docker Image to ECR
+        run: |
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AMAZON_S3_REGION_NAME }}.amazonaws.com/diagnostic-anonymizer:dev
+
+      # Step 6: Trigger Deployment in Second Repository
+      - name: Trigger Deployment in Second Repository
+        run: |
+          echo "${{ github.ref }}"
+          curl -X POST -H "Authorization: token ${{ secrets.DISPATCH_ACCESS_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/Daudkhan1/diagnostic-deployment/dispatches \
+            -d '{"event_type": "web-trigger", "client_payload": { "branch": "${{ github.ref }}" }}'
+
+      # Step 7: Wait for Deployment in Second Repository
+      - name: Wait for Deployment in Second Repository
+        run: |
+          echo "Waiting for deployment to complete..."
+          REPO="Daudkhan1/diagnostic-deployment"
+          MAX_ATTEMPTS=30
+          INTERVAL=10
+          ATTEMPT=0
+
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            echo "Checking workflow status... Attempt $((ATTEMPT+1))/$MAX_ATTEMPTS"
+            STATUS=$(curl -s -H "Authorization: token ${{ secrets.DISPATCH_ACCESS_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/repos/$REPO/actions/runs?per_page=1" | \
+              jq -r '.workflow_runs[0].conclusion')
+            echo "Status is $STATUS ."
+            if [[ "$STATUS" == "success" ]]; then
+              echo "Deployment succeeded in second repository!"
+              exit 0
+            elif [[ "$STATUS" == "failure" || "$STATUS" == "cancelled" ]]; then
+              echo "Deployment failed in second repository!"
+              exit 1
+            fi
+
+            echo "Still running... waiting $INTERVAL seconds before retrying."
+            sleep $INTERVAL
+            ATTEMPT=$((ATTEMPT+1))
+          done
+
+          echo "Timeout reached! Deployment status unknown."
+          exit 1
