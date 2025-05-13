@@ -33,17 +33,17 @@ jobs:
       # Step 4: Build Docker Image
       - name: Build Docker Image
         run: |
-          docker build -t diagnostic-anonymizer:latest .
+          docker build -t diagnostic-anonymizer:dev .
 
       # Step 5: Tag Docker Image
       - name: Tag Docker Image
         run: |
-          docker tag diagnostic-anonymizer:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AMAZON_S3_REGION_NAME }}.amazonaws.com/diagnostic-anonymizer:latest
+          docker tag diagnostic-anonymizer:dev ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AMAZON_S3_REGION_NAME }}.amazonaws.com/diagnostic-anonymizer:dev
 
       # Step 6: Push Docker Image to ECR
       - name: Push Docker Image to ECR
         run: |
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AMAZON_S3_REGION_NAME }}.amazonaws.com/diagnostic-anonymizer:latest
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AMAZON_S3_REGION_NAME }}.amazonaws.com/diagnostic-anonymizer:dev
 
 
       # Step 6: Trigger Deployment in Second Repository
