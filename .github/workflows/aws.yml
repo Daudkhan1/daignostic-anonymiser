@@ -25,18 +25,26 @@ jobs:
           aws-secret-access-key: ${{ secrets.AMAZON_S3_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AMAZON_S3_REGION_NAME }}
 
-      # Step 3: Build Docker Image
+      # Step 3: Login to Amazon ECR
+      - name: Login to Amazon ECR
+        run: |
+          aws ecr get-login-password --region ${{ secrets.AMAZON_S3_REGION_NAME }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AMAZON_S3_REGION_NAME }}.amazonaws.com
+
+      # Step 4: Build Docker Image
       - name: Build Docker Image
         run: |
           docker build -t diagnostic-anonymizer:latest .
 
+      # Step 5: Tag Docker Image
       - name: Tag Docker Image
         run: |
           docker tag diagnostic-anonymizer:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AMAZON_S3_REGION_NAME }}.amazonaws.com/diagnostic-anonymizer:latest
 
+      # Step 6: Push Docker Image to ECR
       - name: Push Docker Image to ECR
         run: |
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AMAZON_S3_ACCESS_KEY_ID }}.amazonaws.com/diagnostic-anonymizer:latest
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AMAZON_S3_REGION_NAME }}.amazonaws.com/diagnostic-anonymizer:latest
+
 
       # Step 6: Trigger Deployment in Second Repository
       - name: Trigger Deployment in Second Repository
