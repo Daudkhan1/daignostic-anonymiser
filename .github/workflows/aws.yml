@@ -3,12 +3,12 @@ name: Deploy to EC2 using AWS CLI
 on:
   push:
     branches:
-      - development
       - main
+      - development
 
 jobs:
   deploy-prod:
-    name: Deploy to EC2 (Prod)
+    name: Deploy to EC2 (main)
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
@@ -33,17 +33,17 @@ jobs:
       # Step 4: Build Docker Image
       - name: Build Docker Image
         run: |
-          docker build -t diagnostic-anonymizer:dev .
+          docker build -t diagnostic-anonymizer:latest .
 
       # Step 5: Tag Docker Image
       - name: Tag Docker Image
         run: |
-          docker tag diagnostic-anonymizer:dev ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AMAZON_S3_REGION_NAME }}.amazonaws.com/diagnostic-anonymizer:dev
+          docker tag diagnostic-anonymizer:dev ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AMAZON_S3_REGION_NAME }}.amazonaws.com/diagnostic-anonymizer:latest
 
       # Step 6: Push Docker Image to ECR
       - name: Push Docker Image to ECR
         run: |
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AMAZON_S3_REGION_NAME }}.amazonaws.com/diagnostic-anonymizer:dev
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AMAZON_S3_REGION_NAME }}.amazonaws.com/diagnostic-anonymizer:latest
 
 
       # Step 6: Trigger Deployment in Second Repository
