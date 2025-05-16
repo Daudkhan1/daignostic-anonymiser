@@ -16,6 +16,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Step 2: Configure AWS CLI
       - name: Configure AWS CLI
         uses: aws-actions/configure-aws-credentials@v1
         with:
