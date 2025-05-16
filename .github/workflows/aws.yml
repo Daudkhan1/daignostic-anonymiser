@@ -9,7 +9,7 @@ on:
 jobs:
   deploy-prod:
     name: Deploy to EC2 (main)
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/development'
     runs-on: ubuntu-latest
 
     steps:
