@@ -3,13 +3,13 @@ name: Deploy to EC2 using AWS CLI
 on:
   push:
     branches:
-      - main
       - development
+      - main
 
 jobs:
-  deploy-prod:
-    name: Deploy to EC2 (main)
-    if: github.ref == 'refs/heads/development'
+  push-image:
+    name: Push Docker Image
+    if: github.ref == 'refs/heads/' || github.ref == 'refs/heads/development'
     runs-on: ubuntu-latest
 
     steps:
