@@ -57,6 +57,7 @@ jobs:
             -d '{"event_type": "web-trigger", "client_payload": { "branch": "${{ steps.vars.outputs.TARGET_BRANCH }}" }}'
 
 
+      # Step 5: Wait for Deployment in Second Repository
       - name: Wait for Deployment in Second Repository
         run: |
           echo "Waiting for deployment to complete..."
@@ -67,17 +68,22 @@ jobs:
 
           while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
             echo "Checking workflow status... Attempt $((ATTEMPT+1))/$MAX_ATTEMPTS"
-            STATUS=$(curl -s -H "Authorization: token ${{ secrets.DISPATCH_ACCESS_TOKEN }}" \
+
+            WORKFLOW_DATA=$(curl -s -H "Authorization: token ${{ secrets.DISPATCH_ACCESS_TOKEN }}" \
               -H "Accept: application/vnd.github.v3+json" \
-              "https://api.github.com/repos/$REPO/actions/runs?per_page=1" | \
-              jq -r '.workflow_runs[0].conclusion')
-            echo "Status is $STATUS ."
-            if [[ "$STATUS" == "success" ]]; then
-              echo "Deployment succeeded in second repository!"
-              exit 0
-            elif [[ "$STATUS" == "failure" || "$STATUS" == "cancelled" ]]; then
-              echo "Deployment failed in second repository!"
-              exit 1
+              "https://api.github.com/repos/$REPO/actions/runs/${{ env.WORKFLOW_RUN_ID }}")
+
+            WORKFLOW_STATUS=$(echo "$WORKFLOW_DATA" | jq -r '.status')
+            WORKFLOW_CONCLUSION=$(echo "$WORKFLOW_DATA" | jq -r '.conclusion')
+
+            if [[ "$WORKFLOW_STATUS" == "completed" ]]; then
+              if [[ "$WORKFLOW_CONCLUSION" == "success" ]]; then
+                echo "Deployment succeeded in second repository!"
+                exit 0
+              elif [[ "$WORKFLOW_CONCLUSION" == "failure" || "$WORKFLOW_CONCLUSION" == "cancelled" ]]; then
+                echo "Deployment failed in second repository!"
+                exit 1
+              fi
             fi
 
             echo "Still running... waiting $INTERVAL seconds before retrying."
