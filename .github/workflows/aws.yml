@@ -48,14 +48,42 @@ jobs:
       - name: Push Docker Image to ECR
         run: |
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AMAZON_S3_REGION_NAME }}.amazonaws.com/diagnostic-anonymizer:${{ steps.vars.outputs.TAG }}
-#secod repo trigger
+      # Step 4: Trigger Deployment in Second Repository (Fixed)
       - name: Trigger Deployment in Second Repository
         run: |
+          echo "Triggering deployment in second repository..."
           curl -X POST -H "Authorization: token ${{ secrets.DISPATCH_ACCESS_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/Daudkhan1/diagnostic-deployment/dispatches \
-            -d '{"event_type": "web-trigger", "client_payload": { "branch": "${{ steps.vars.outputs.TARGET_BRANCH }}" }}'
+            -d "{\"event_type\": \"web-trigger\", \"client_payload\": { \"branch\": \"${{ steps.vars.outputs.TARGET_BRANCH }}\" }}"
 
+          sleep 10
+
+          MAX_RETRIES=5
+          RETRY_COUNT=0
+          WORKFLOW_RUN_ID=""
+
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            WORKFLOW_RUN_ID=$(curl -s -H "Authorization: token ${{ secrets.DISPATCH_ACCESS_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/repos/Daudkhan1/diagnostic-deployment/actions/runs?per_page=5" | \
+              jq -r '.workflow_runs[] | select(.name == "Deploy to EC2 using AWS CLI" and .event == "repository_dispatch" and (.status == "in_progress" or .status == "queued")) | .id' | head -n 1)
+
+            if [ "$WORKFLOW_RUN_ID" != "null" ] && [ ! -z "$WORKFLOW_RUN_ID" ]; then
+              break
+            fi
+
+            echo "Workflow run ID not found yet, retrying in 5 seconds..."
+            sleep 5
+            RETRY_COUNT=$((RETRY_COUNT+1))
+          done
+
+          if [ -z "$WORKFLOW_RUN_ID" ] || [ "$WORKFLOW_RUN_ID" == "null" ]; then
+            echo "Failed to get workflow run ID after $MAX_RETRIES attempts"
+            exit 1
+          fi
+
+          echo "WORKFLOW_RUN_ID=$WORKFLOW_RUN_ID" >> $GITHUB_ENV
 
       # Step 5: Wait for Deployment in Second Repository
       - name: Wait for Deployment in Second Repository
