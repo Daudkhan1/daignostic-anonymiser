@@ -48,7 +48,7 @@ jobs:
       - name: Push Docker Image to ECR
         run: |
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AMAZON_S3_REGION_NAME }}.amazonaws.com/diagnostic-anonymizer:${{ steps.vars.outputs.TAG }}
-
+#secod repo trigger
       - name: Trigger Deployment in Second Repository
         run: |
           curl -X POST -H "Authorization: token ${{ secrets.DISPATCH_ACCESS_TOKEN }}" \
