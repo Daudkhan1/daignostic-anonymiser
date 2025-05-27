@@ -5,33 +5,27 @@ on:
     branches:
       - development
       - main
-      - feature-test # Added: Listen for pushes to feature-test
 
 jobs:
-  deploy:
-    name: Deploy to EC2
+  deploy-prod:
+    name: Deploy to EC2 (Prod)
+    if: github.ref == 'refs/heads/prod'
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set environment variables based on branch
-        id: vars
-        run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "TAG=latest" >> $GITHUB_OUTPUT
-            echo "TARGET_BRANCH=main" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.ref }}" == "refs/heads/development" ]]; then
-            echo "TAG=dev" >> $GITHUB_OUTPUT
-            echo "TARGET_BRANCH=development" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.ref }}" == "refs/heads/feature-test" ]]; then # Added: Logic for feature-test branch
-            echo "TAG=test" >> $GITHUB_OUTPUT
-            echo "TARGET_BRANCH=feature-test" >> $GITHUB_OUTPUT
-          else
-            echo "No matching branch found for deployment. Exiting."
-            exit 1
-          fi
+      # - name: Set environment variables based on branch
+      #   id: vars
+      #   run: |
+      #     if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+      #       echo "TAG=latest" >> $GITHUB_OUTPUT
+      #       echo "TARGET_BRANCH=main" >> $GITHUB_OUTPUT
+      #     elif [[ "${{ github.ref }}" == "refs/heads/development" ]]; then
+      #       echo "TAG=dev" >> $GITHUB_OUTPUT
+      #       echo "TARGET_BRANCH=development" >> $GITHUB_OUTPUT
+      #     fi
 
       - name: Configure AWS CLI
         uses: aws-actions/configure-aws-credentials@v1
@@ -55,17 +49,16 @@ jobs:
       - name: Push Docker Image to ECR
         run: |
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AMAZON_S3_REGION_NAME }}.amazonaws.com/diagnostic-anonymizer:${{ steps.vars.outputs.TAG }}
-      
-      # Step 4: Trigger Deployment in Second Repository.
+      # Step 4: Trigger Deployment in Second Repository (Fixed)...
       - name: Trigger Deployment in Second Repository
         run: |
           echo "Triggering deployment in second repository..."
           curl -X POST -H "Authorization: token ${{ secrets.DISPATCH_ACCESS_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/Daudkhan1/diagnostic-deployment/dispatches \
-            -d "{\"event_type\": \"web-trigger\", \"client_payload\": { \"branch\": \"${{ steps.vars.outputs.TARGET_BRANCH }}\" }}"
+            -d '{"event_type": "web-trigger", "client_payload": { "branch": "${{ github.ref }}" }}'
 
-          sleep 10 # Give GitHub Actions a moment to register the new workflow run
+          sleep 10
 
           MAX_RETRIES=5
           RETRY_COUNT=0
@@ -73,22 +66,21 @@ jobs:
 
           while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
             WORKFLOW_RUN_ID=$(curl -s -H "Authorization: token ${{ secrets.DISPATCH_ACCESS_TOKEN }}" \
-              -H "Accept: application/vnd.github.com/v3+json" \
-              "https://api.github.com/repos/Daudkhan1/diagnostic-deployment/actions/runs?per_page=5&event=repository_dispatch" | \
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/repos/Daudkhan1/diagnostic-deployment/actions/runs?per_page=5" | \
               jq -r '.workflow_runs[] | select(.name == "Deploy to EC2 using AWS CLI" and .event == "repository_dispatch" and (.status == "in_progress" or .status == "queued")) | .id' | head -n 1)
 
-            if [ "$WORKFLOW_RUN_ID" != "" ] && [ "$WORKFLOW_RUN_ID" != "null" ]; then
-              echo "Found workflow run ID: $WORKFLOW_RUN_ID"
+            if [ "$WORKFLOW_RUN_ID" != "null" ] && [ ! -z "$WORKFLOW_RUN_ID" ]; then
               break
             fi
 
-            echo "Workflow run ID not found yet, retrying in 5 seconds... (Attempt $((RETRY_COUNT+1)))"
+            echo "Workflow run ID not found yet, retrying in 5 seconds..."
             sleep 5
             RETRY_COUNT=$((RETRY_COUNT+1))
           done
 
           if [ -z "$WORKFLOW_RUN_ID" ] || [ "$WORKFLOW_RUN_ID" == "null" ]; then
-            echo "Failed to get workflow run ID after $MAX_RETRIES attempts. Check if the target workflow started."
+            echo "Failed to get workflow run ID after $MAX_RETRIES attempts"
             exit 1
           fi
 
@@ -107,7 +99,7 @@ jobs:
             echo "Checking workflow status... Attempt $((ATTEMPT+1))/$MAX_ATTEMPTS"
 
             WORKFLOW_DATA=$(curl -s -H "Authorization: token ${{ secrets.DISPATCH_ACCESS_TOKEN }}" \
-              -H "Accept: application/vnd.github.com/v3+json" \
+              -H "Accept: application/vnd.github.v3+json" \
               "https://api.github.com/repos/$REPO/actions/runs/${{ env.WORKFLOW_RUN_ID }}")
 
             WORKFLOW_STATUS=$(echo "$WORKFLOW_DATA" | jq -r '.status')
@@ -117,8 +109,8 @@ jobs:
               if [[ "$WORKFLOW_CONCLUSION" == "success" ]]; then
                 echo "Deployment succeeded in second repository!"
                 exit 0
-              elif [[ "$WORKFLOW_CONCLUSION" == "failure" || "$WORKFLOW_CONCLUSION" == "cancelled" || "$WORKFLOW_CONCLUSION" == "skipped" ]]; then # Added 'skipped'
-                echo "Deployment failed or was cancelled/skipped in second repository! Conclusion: $WORKFLOW_CONCLUSION"
+              elif [[ "$WORKFLOW_CONCLUSION" == "failure" || "$WORKFLOW_CONCLUSION" == "cancelled" ]]; then
+                echo "Deployment failed in second repository!"
                 exit 1
               fi
             fi
@@ -128,5 +120,5 @@ jobs:
             ATTEMPT=$((ATTEMPT+1))
           done
 
-          echo "Timeout reached! Deployment status unknown after $MAX_ATTEMPTS attempts."
+          echo "Timeout reached! Deployment status unknown."
           exit 1
