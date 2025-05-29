@@ -9,9 +9,9 @@ services:
     ports:
       - "8001:8001"  # Expose port 8001 to the host
     environment:
-      - AMAZON_S3_ACCESS_KEY_ID=${{ secrets.AMAZON_S3_ACCESS_KEY_ID }}
-      - AMAZON_S3_SECRET_ACCESS_KEY=${{ secrets.AMAZON_S3_SECRET_ACCESS_KEY }}
-      - AMAZON_S3_REGION_NAME=${{ secrets.AMAZON_S3_REGION_NAME }}
+      - AMAZON_S3_ACCESS_KEY_ID=${{ secrets.PRAID_S3_ACCESS_KEY_ID }}
+      - AMAZON_S3_SECRET_ACCESS_KEY=${{ secrets.PRAID_S3_SECRET_ACCESS_KEY }}
+      - AMAZON_S3_REGION_NAME=${{ secrets.PRAID_S3_REGION_NAME }}
       - OUTPUT_DIRECTORY=/tmp
     networks:
       - app-network
