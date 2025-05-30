@@ -57,7 +57,6 @@ jobs:
             https://api.github.com/repos/Daudkhan1/diagnostic-deployment/dispatches \
             -d "{\"event_type\": \"web-trigger\", \"client_payload\": { \"branch\": \"${{ steps.vars.outputs.TARGET_BRANCH }}\" }}"
 
-          sleep 10
 
           MAX_RETRIES=5
           RETRY_COUNT=0
@@ -85,7 +84,7 @@ jobs:
 
           echo "WORKFLOW_RUN_ID=$WORKFLOW_RUN_ID" >> $GITHUB_ENV
 
-      # Step 5: Wait for Deployment in Second Repository
+      # Step 5: Wait for Deployment in Second Repository.
       - name: Wait for Deployment in Second Repository
         run: |
           echo "Waiting for deployment to complete..."
