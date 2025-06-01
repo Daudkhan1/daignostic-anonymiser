@@ -1,10 +1,13 @@
 name: Deploy to EC2 using AWS CLI
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       image_tag:
-        description: 'Enter the image tag (e.g., v1.0)'
+        description: 'v1'
         required: true
 
 jobs:
