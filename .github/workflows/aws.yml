@@ -30,8 +30,16 @@ jobs:
             fi
             echo "TAG=$new_tag" >> $GITHUB_OUTPUT
             echo "TARGET_BRANCH=main" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.ref }}" == "refs/heads/development" ]]; then
-            echo "TAG=dev-${{ github.run_number }}" >> $GITHUB_OUTPUT
+
+          elif [[ "${GITHUB_REF}" == "refs/heads/development" ]]; then
+            latest_tag=$(git tag --sort=-v:refname | grep '^dev[0-9]\+$' | head -n 1)
+            if [[ -z "$latest_tag" ]]; then
+              new_tag="dev1"
+            else
+              num=$(echo "$latest_tag" | sed 's/dev//')
+              new_tag="dev$((num + 1))"
+            fi
+            echo "TAG=$new_tag" >> $GITHUB_OUTPUT
             echo "TARGET_BRANCH=development" >> $GITHUB_OUTPUT
           fi
 
@@ -94,7 +102,7 @@ jobs:
 
           echo "WORKFLOW_RUN_ID=$WORKFLOW_RUN_ID" >> $GITHUB_ENV
 
-      # Step 5: Wait for Deployment in Second Repository
+      # Step 5: Wait for Deployment in Second Repository.
       - name: Wait for Deployment in Second Repository
         run: |
           echo "Waiting for deployment to complete..."
