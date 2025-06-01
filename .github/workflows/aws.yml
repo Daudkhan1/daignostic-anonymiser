@@ -3,22 +3,28 @@ name: Deploy to EC2 using AWS CLI
 on:
   push:
     branches:
+      - development
       - main
-  workflow_dispatch:
-    inputs:
-      image_tag:
-        description: 'v1'
-        required: true
 
 jobs:
-  deploy-prod:
-    name: Deploy to EC2 (Prod)
+  deploy:
+    name: Deploy to EC2
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Set environment variables based on branch
+        id: vars
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "TAG=v${{ github.run_number }}" >> $GITHUB_OUTPUT
+            echo "TARGET_BRANCH=main" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/development" ]]; then
+            echo "TAG=dev-${{ github.run_number }}" >> $GITHUB_OUTPUT
+            echo "TARGET_BRANCH=development" >> $GITHUB_OUTPUT
+          fi
 
       - name: Configure AWS CLI
         uses: aws-actions/configure-aws-credentials@v1
@@ -33,24 +39,23 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          docker build -t diagnostic-anonymizer:${{ github.event.inputs.image_tag }} .
+          docker build -t diagnostic-anonymizer:${{ steps.vars.outputs.TAG }} .
 
       - name: Tag Docker Image
         run: |
-          docker tag diagnostic-anonymizer:${{ github.event.inputs.image_tag }} ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AMAZON_S3_REGION_NAME }}.amazonaws.com/diagnostic-anonymizer:${{ github.event.inputs.image_tag }}
+          docker tag diagnostic-anonymizer:${{ steps.vars.outputs.TAG }} ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AMAZON_S3_REGION_NAME }}.amazonaws.com/diagnostic-anonymizer:${{ steps.vars.outputs.TAG }}
 
       - name: Push Docker Image to ECR
         run: |
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AMAZON_S3_REGION_NAME }}.amazonaws.com/diagnostic-anonymizer:${{ github.event.inputs.image_tag }}
-
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AMAZON_S3_REGION_NAME }}.amazonaws.com/diagnostic-anonymizer:${{ steps.vars.outputs.TAG }}
+      # Step 4: Trigger Deployment in Second Repository (Fixed)
       - name: Trigger Deployment in Second Repository
         run: |
           echo "Triggering deployment in second repository..."
           curl -X POST -H "Authorization: token ${{ secrets.DISPATCH_ACCESS_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/Daudkhan1/diagnostic-deployment/dispatches \
-            -d '{"event_type": "web-trigger", "client_payload": { "branch": "main", "tag": "${{ github.event.inputs.image_tag }}" }}'
-
+            -d "{\"event_type\": \"web-trigger\", \"client_payload\": { \"branch\": \"${{ steps.vars.outputs.TARGET_BRANCH }}\" }}"
 
           sleep 10
 
