@@ -1,6 +1,10 @@
 name: Deploy to EC2 using AWS CLI
 
 on:
+  push:
+    branches:
+      - development
+      - main
   workflow_dispatch:
     inputs:
       image_tag:
