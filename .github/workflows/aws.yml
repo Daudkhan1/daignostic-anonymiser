@@ -26,6 +26,7 @@ jobs:
             echo "TARGET_BRANCH=development" >> $GITHUB_OUTPUT
           fi
 
+
       - name: Configure AWS CLI
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -48,7 +49,7 @@ jobs:
       - name: Push Docker Image to ECR
         run: |
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AMAZON_S3_REGION_NAME }}.amazonaws.com/diagnostic-anonymizer:${{ steps.vars.outputs.TAG }}
-      # Step 4: Trigger Deployment in Second Repository (Fixed)
+      # Step 4: Trigger Deployment in Second Repository (Fixed).
       - name: Trigger Deployment in Second Repository
         run: |
           echo "Triggering deployment in second repository..."
@@ -85,7 +86,7 @@ jobs:
 
           echo "WORKFLOW_RUN_ID=$WORKFLOW_RUN_ID" >> $GITHUB_ENV
 
-      # Step 5: Wait for Deployment in Second Repository.
+      # Step 5: Wait for Deployment in Second Repository
       - name: Wait for Deployment in Second Repository
         run: |
           echo "Waiting for deployment to complete..."
