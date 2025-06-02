@@ -18,13 +18,17 @@ jobs:
       - name: Set environment variables based on branch
         id: vars
         run: |
+      - name: Set environment variables based on branch
+        id: vars
+        run: |
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "TAG=v${{ github.run_number }}" >> $GITHUB_OUTPUT
+            echo "TAG=latest" >> $GITHUB_OUTPUT
             echo "TARGET_BRANCH=main" >> $GITHUB_OUTPUT
           elif [[ "${{ github.ref }}" == "refs/heads/development" ]]; then
-            echo "TAG=dev-${{ github.run_number }}" >> $GITHUB_OUTPUT
+            echo "TAG=dev" >> $GITHUB_OUTPUT
             echo "TARGET_BRANCH=development" >> $GITHUB_OUTPUT
           fi
+
 
       - name: Configure AWS CLI
         uses: aws-actions/configure-aws-credentials@v1
