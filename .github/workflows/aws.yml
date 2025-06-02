@@ -18,31 +18,15 @@ jobs:
       - name: Set environment variables based on branch
         id: vars
         run: |
-          git fetch --tags
-
-          if [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
-            latest_tag=$(git tag --sort=-v:refname | grep '^v[0-9]\+$' | head -n 1)
-            if [[ -z "$latest_tag" ]]; then
-              new_tag="v1"
-            else
-              num=$(echo "$latest_tag" | sed 's/v//')
-              new_tag="v$((num + 1))"
-            fi
-            echo "TAG=$new_tag" >> $GITHUB_OUTPUT
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "TAG=v${{ github.run_number }}" >> $GITHUB_OUTPUT
             echo "TARGET_BRANCH=main" >> $GITHUB_OUTPUT
-
-          elif [[ "${GITHUB_REF}" == "refs/heads/development" ]]; then
-            latest_tag=$(git tag --sort=-v:refname | grep '^dev[0-9]\+$' | head -n 1)
-            if [[ -z "$latest_tag" ]]; then
-              new_tag="dev1"
-            else
-              num=$(echo "$latest_tag" | sed 's/dev//')
-              new_tag="dev$((num + 1))"
-            fi
-            echo "TAG=$new_tag" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/development" ]]; then
+            echo "TAG=dev" >> $GITHUB_OUTPUT
             echo "TARGET_BRANCH=development" >> $GITHUB_OUTPUT
           fi
 
+          
       - name: Configure AWS CLI
         uses: aws-actions/configure-aws-credentials@v1
         with:
