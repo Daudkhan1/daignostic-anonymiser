@@ -18,6 +18,7 @@ jobs:
       - name: Set environment variables based on branch
         id: vars
         run: |
+          echo "IMAGE_NAME=831926608672.dkr.ecr.ap-south-1.amazonaws.com/diagnostic-anonymizer" >> $GITHUB_OUTPUT
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             echo "TAG=v${{ github.run_number }}" >> $GITHUB_OUTPUT
             echo "TARGET_BRANCH=main" >> $GITHUB_OUTPUT
@@ -56,7 +57,7 @@ jobs:
           curl -X POST -H "Authorization: token ${{ secrets.DISPATCH_ACCESS_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/Daudkhan1/diagnostic-deployment/dispatches \
-            -d "{\"event_type\": \"web-trigger\", \"client_payload\": { \"branch\": \"${{ steps.vars.outputs.TARGET_BRANCH }}\", \"image_tag\": \"${{ steps.vars.outputs.TAG }}\" }}"
+            -d "{\"event_type\": \"web-trigger\", \"client_payload\": { \"branch\": \"${{ steps.vars.outputs.TARGET_BRANCH }}\", \"image_tag\": \"${{ steps.vars.outputs.TAG }}\", \"image_name\": \"${{ steps.vars.outputs.IMAGE_NAME }}\" }}"
 
           sleep 10
 
