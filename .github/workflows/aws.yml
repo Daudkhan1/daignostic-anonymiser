@@ -18,7 +18,7 @@ jobs:
       - name: Set environment variables based on branch
         id: vars
         run: |
-          echo "IMAGE_NAME=831926608672.dkr.ecr.ap-south-1.amazonaws.com/diagnostic-anonymizer" >> $GITHUB_OUTPUT
+          echo "IMAGE_NAME=diagnostic-anonymizer" >> $GITHUB_OUTPUT
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             echo "TAG=v${{ github.run_number }}" >> $GITHUB_OUTPUT
             echo "TARGET_BRANCH=main" >> $GITHUB_OUTPUT
