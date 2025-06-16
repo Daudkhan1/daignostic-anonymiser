@@ -87,7 +87,7 @@ jobs:
 
           echo "WORKFLOW_RUN_ID=$WORKFLOW_RUN_ID" >> $GITHUB_ENV
 
-      # Step 5: Wait for Deployment in Second Repository
+      # Step 5: Wait for Deployment in Second Repository.
       - name: Wait for Deployment in Second Repository
         run: |
           echo "Waiting for deployment to complete..."
