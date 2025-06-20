@@ -23,7 +23,7 @@ jobs:
             echo "TAG=v${{ github.run_number }}" >> $GITHUB_OUTPUT
             echo "TARGET_BRANCH=main" >> $GITHUB_OUTPUT
           elif [[ "${{ github.ref }}" == "refs/heads/development" ]]; then
-            echo "TAG=dev${{ github.run_number }}" >> $GITHUB_OUTPUT
+            echo "TAG=dev" >> $GITHUB_OUTPUT
             echo "TARGET_BRANCH=development" >> $GITHUB_OUTPUT
           fi
 
@@ -87,7 +87,7 @@ jobs:
 
           echo "WORKFLOW_RUN_ID=$WORKFLOW_RUN_ID" >> $GITHUB_ENV
 
-      # Step 5: Wait for Deployment in Second Repository.
+      # Step 5: Wait for Deployment in Second Repository
       - name: Wait for Deployment in Second Repository
         run: |
           echo "Waiting for deployment to complete..."
