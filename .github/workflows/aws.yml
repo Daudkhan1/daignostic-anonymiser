@@ -50,7 +50,7 @@ jobs:
       - name: Push Docker Image to ECR
         run: |
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AMAZON_S3_REGION_NAME }}.amazonaws.com/diagnostic-anonymizer:${{ steps.vars.outputs.TAG }}
-      # Step 4: Trigger Deployment in Second Repository (Fixed)
+      # Step 4: Trigger Deployment in Second Repository (Fixed).
       - name: Trigger Deployment in Second Repository
         run: |
           echo "Triggering deployment in second repository..."
