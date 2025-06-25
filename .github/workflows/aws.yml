@@ -22,9 +22,9 @@ jobs:
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             echo "TAG=v${{ github.run_number }}" >> $GITHUB_OUTPUT
             echo "TARGET_BRANCH=main" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.ref }}" == "refs/heads/development" ]]; then
+          elif [[ "${{ github.ref }}" == "refs/heads/staging" ]]; then
             echo "TAG=dev${{ github.run_number }}" >> $GITHUB_OUTPUT
-            echo "TARGET_BRANCH=development" >> $GITHUB_OUTPUT
+            echo "TARGET_BRANCH=staging" >> $GITHUB_OUTPUT
           fi
 
 
