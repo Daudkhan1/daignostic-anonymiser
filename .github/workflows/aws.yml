@@ -23,7 +23,8 @@ jobs:
             echo "TAG=v${{ github.run_number }}" >> $GITHUB_OUTPUT
             echo "TARGET_BRANCH=main" >> $GITHUB_OUTPUT
           elif [[ "${{ github.ref }}" == "refs/heads/staging" ]]; then
-            echo "TAG=dev${{ github.run_number }}" >> $GITHUB_OUTPUT
+            COMMIT_HASH=$(git rev-parse --short HEAD)
+            echo "TAG=dev-$COMMIT_HASH" >> $GITHUB_OUTPUT
             echo "TARGET_BRANCH=staging" >> $GITHUB_OUTPUT
           fi
 
