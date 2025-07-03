@@ -5,12 +5,13 @@ on:
     branches:
       - development
       - main
+      - staging
 
 jobs:
   deploy:
+    if: github.ref != 'refs/heads/development'
     name: Deploy to EC2
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
